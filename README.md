@@ -1,17 +1,12 @@
 # Educational Framework for AI-Driven RF Signal Processing on FPGA
 
-This repository contains the complete deliverable for an EE800/820 master's capstone project: a five-module progressive curriculum that integrates FPGA digital design, RF communications, embedded firmware, and machine learning into a single hardware-grounded learning sequence, paired with a benchtop reference implementation that instantiates each cross-domain interface as a directly observable design problem.
-
-Student: Jude Eschete    
-Advisor: Dr. Bernard Yett    
-Institution: Stevens Institute of Technology, Department of Electrical and Computer Engineering    
-Semester: Spring 2026    
+A five-module progressive curriculum that integrates FPGA digital design, RF communications, embedded firmware, and machine learning into a single hardware-grounded learning sequence, paired with a benchtop reference implementation that instantiates each cross-domain interface as a directly observable design problem.
 
 ## Overview
 
 The framework targets senior-undergraduate and master's-level electrical engineering students who have completed introductory coursework in each of the four constituent disciplines individually but lack experience integrating them into a working system. Three STM32 Nucleo nodes (two cooperative targets running a DATA/ACK ping-pong protocol, one interceptor capturing the bidirectional traffic and running a button-gated PAUSE protocol) feed a Digilent Nexys A7-100T FPGA over a 43-byte CRC-protected forwarding frame; the FPGA emits per-emitter feature vectors over USB-UART to a host machine, where four classifier families (random forest, SVM, MLP, 1-D CNN) are trained on a labeled dataset and the deployed pipeline runs against the live FPGA stream.
 
-Modules 1–4 were executed end-to-end on physical hardware. Module 5 is fully specified across eight lab handouts and left as future cohort work. Four cross-domain integration faults surfaced organically during execution and are documented in [TestLog.md](TestLog.md) and the final report.
+Modules 1–4 were executed end-to-end on physical hardware. Module 5 is fully specified across eight lab handouts and left as future cohort work. Four cross-domain integration faults surfaced organically during execution and are documented in [TestLog.md](TestLog.md) and the paper.
 
 ## Hardware Platform
 
@@ -38,30 +33,20 @@ Modules 1–4 were executed end-to-end on physical hardware. Module 5 is fully s
 │   ├── Tools/                       # Capture, dataset collection, EDA, Vivado-report parsers
 │   ├── STM32/                       # CubeMX shared project assets
 │   ├── Labs/                        # Lab-handout-specific working files
-│   └── NeededFiles/                 # Loose reference assets
+│   └── NeededFiles/                 # Master XDC and reference assets
 ├── LessonPlans/
 │   ├── Module 1/ ... Module 5/      # Per-module lesson plan + LabHandouts/LH*-A..H
 │   ├── Template/
 │   ├── glossary.tex
 │   └── Curriculum_Sequence.tex      # Top-level curriculum sequence document
-├── Proposal/                        # Original research proposal (Spring 2026)
-├── Term_Paper/
-│   ├── Midstage/                    # Mid-stage report (March 2026)
-│   ├── FinalReport/                 # Final IEEE-format report (May 2026)
-│   ├── Sources/                     # Reference PDFs and source materials
-│   ├── conference-latex-template_10-17-19/  # IEEE conference template
-│   ├── FinalReportReqs.txt          # Course-level submission requirements
-│   ├── MidStageReportInstructions.txt
-│   └── How to prepare the final report.pdf
-├── Notes/                           # Working notes, references, screenshots
-├── Videos/                          # Demo / lab-walkthrough captures
+├── ResearchPaper/
+│   ├── FinalReport/                 # IEEE-format paper (Eschete_RF_AI_FPGA_Curriculum.{tex,pdf})
+│   └── Sources/                     # Reference PDFs and bibliography sources
+├── Notes/                           # Working references and configuration screenshots
+├── Eschete_Presentation.pptx        # Project presentation slide deck
 ├── TestLog.md                       # Running validation log across all lab handouts
-├── ExplanationsLog.md               # Documented integration faults and resolutions
-├── FigList.txt                      # Figure inventory for the final report
-├── FinalReportNeeds.txt             # Pre-pivot scope-tracking checklist
-├── LabHandoutNotes.txt              # Curriculum revision notes
-├── ToDo.txt                         # Outstanding tasks
-├── AI Use Disclaimer.txt
+├── FigList.txt                      # Figure inventory for the paper
+├── wiring_diagram.png               # Per-node hardware wiring (Threat / Target A / Target B)
 └── README.md
 ```
 
@@ -87,7 +72,7 @@ Each module spans four sessions of ~3 hours and ships eight lab handouts (`LH<n>
 
 ## Recommended Starting Points
 
-- **Final report (most current narrative):** [Term_Paper/FinalReport/EE800_FinalReport_Eschete.pdf](Term_Paper/FinalReport/EE800_FinalReport_Eschete.pdf) and the corresponding `.tex` source.
+- **Paper (full narrative):** [ResearchPaper/FinalReport/Eschete_RF_AI_FPGA_Curriculum.pdf](ResearchPaper/FinalReport/Eschete_RF_AI_FPGA_Curriculum.pdf) and the corresponding `.tex` source.
 - **Curriculum:** [LessonPlans/](LessonPlans/) — start with `Module 1/Module1.tex` for the lesson plan and the `LabHandouts/LH1-*.tex` files for the per-handout deliverables.
 - **Validation evidence:** [TestLog.md](TestLog.md) — running record of every executed lab handout.
 - **FPGA implementation:** [Code/ingest_top/](Code/ingest_top/) — Vivado project for the Module 2 ingestion pipeline.
@@ -98,4 +83,26 @@ Each module spans four sessions of ~3 hours and ships eight lab handouts (`LH<n>
 
 ## Status
 
-Final-report submission ready. The four executed modules have hardware evidence archived in `TestLog.md`, the manifest files under `Code/AIML/`, and the Vivado synthesis/implementation reports under `Code/ingest_top/`. Module 5 cohort execution and the deferred C3/C4 campaigns are documented as future work.
+Modules 1–4 are validated on hardware: evidence is archived in `TestLog.md`, the per-stage manifests under `Code/AIML/`, and the Vivado synthesis/implementation reports under `Code/ingest_top/`. Module 5 cohort execution and the deferred C3/C4 dataset campaigns remain open.
+
+## Citation
+
+If you use this framework or build on its curriculum, please cite:
+
+```bibtex
+@techreport{eschete2026rfaifpga,
+  title       = {An Educational Framework for {AI-Driven} {RF} Signal Processing on {FPGA}},
+  author      = {Eschete, Jude and Yett, Bernard},
+  institution = {Stevens Institute of Technology, Department of Electrical and Computer Engineering},
+  year        = {2026}
+}
+```
+
+## License
+
+License TBD — no formal license is in place yet, so external reuse is restricted by default. A common pairing for projects of this kind is the MIT License for code under `Code/` and CC BY 4.0 for the curriculum materials under `LessonPlans/` and the paper under `ResearchPaper/`. A `LICENSE` file will be added before public redistribution.
+
+## Contact
+
+- **Jude Eschete** — author and primary contributor · [github.com/JEschete](https://github.com/JEschete)
+- **Bernard Yett** — project advisor, Stevens Institute of Technology
