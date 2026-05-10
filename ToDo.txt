@@ -1,4 +1,0 @@
-
-Replace flow charts with images instead of latex implementation. 
-Address module 1 comments
-Build out physical project.

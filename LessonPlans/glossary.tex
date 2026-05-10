@@ -1,62 +1,95 @@
-% Shared acronym macro container for EE800/820 lesson plan modules.
+% Shared acronym macro container for lesson plan modules.
 % Usage: type \IDE, \FPGA, \UART, etc. First use is expanded; later uses show acronym only.
 % Requires in each document preamble:
-%   \usepackage[acronym,toc]{glossaries}
-%   \makeglossaries
-%   \input{../glossary}
+%   \usepackage[acronym,toc,nopostdot]{glossaries}
+%   \makenoidxglossaries
+%   \input{../glossary}   (or ../../glossary from LabHandouts)
 % Print used acronyms near end of document:
-%   \printglossary[type=\acronymtype,title={Acronyms Used}]
+%   \printnoidxglossary[type=\acronymtype,title={Glossary}]
+
+% ── Custom glossary style: right-aligned page list ───────────
+% Three-column longtable layout: acronym | expansion | pages.
+% The last column is right-justified so page numbers sit flush
+% against the right text margin instead of trailing the
+% description inline. Requires \usepackage{longtable} and
+% \usepackage{array} — both are pulled in automatically by the
+% glossary-long style that ships with the glossaries package.
+\newglossarystyle{glossrightloc}{%
+	\renewenvironment{theglossary}%
+		{\begin{longtable}{@{}p{0.11\textwidth} p{0.62\textwidth} >{\raggedleft\arraybackslash}p{0.20\textwidth}@{}}}%
+		{\end{longtable}}%
+	\renewcommand*{\glossaryheader}{}%
+	\renewcommand*{\glsgroupheading}[1]{}%
+	\renewcommand*{\glossentry}[2]{%
+		\glsentryitem{##1}\textbf{\glstarget{##1}{\glossentryname{##1}}} &
+		\glossentrydesc{##1}\glspostdescription{} & ##2\tabularnewline
+	}%
+	\renewcommand*{\subglossentry}[3]{%
+		 & \glossentrydesc{##2}\glspostdescription{} & ##3\tabularnewline
+	}%
+	\renewcommand*{\glsgroupskip}{}%
+}
+\setglossarystyle{glossrightloc}
 
 % Acronym definitions (only used entries appear in the printed glossary).
-\newacronym{ask}{ASK}{amplitude shift keying}
-\newacronym{bga}{BGA}{ball grid array}
-\newacronym{bom}{BOM}{bill of materials}
-\newacronym{bram}{BRAM}{block random access memory}
-\newacronym{crc}{CRC}{cyclic redundancy check}
-\newacronym{css}{CSS}{chirp spread spectrum}
-\newacronym{dma}{DMA}{direct memory access}
-\newacronym{dsp}{DSP}{digital signal processing}
-\newacronym{eda}{EDA}{exploratory data analysis}
-\newacronym{fifo}{FIFO}{first in, first out}
-\newacronym{fpga}{FPGA}{field-programmable gate array}
-\newacronym{fsk}{FSK}{frequency shift keying}
-\newacronym{fsm}{FSM}{finite state machine}
-\newacronym{gpio}{GPIO}{general-purpose input/output}
-\newacronym{hal}{HAL}{hardware abstraction layer}
-\newacronym{i2c}{I\textsuperscript{2}C}{inter-integrated circuit}
-\newacronym{ide}{IDE}{integrated development environment}
-\newacronym{ila}{ILA}{integrated logic analyzer}
-\newacronym{ism}{ISM}{industrial, scientific, and medical}
-\newacronym{isr}{ISR}{interrupt service routine}
-\newacronym{lut}{LUT}{look-up table}
-\newacronym{mcu}{MCU}{microcontroller unit}
-\newacronym{ml}{ML}{machine learning}
-\newacronym{ook}{OOK}{on-off keying}
-\newacronym{per}{PER}{packet error rate}
-\newacronym{rf}{RF}{radio frequency}
-\newacronym{rssi}{RSSI}{received signal strength indicator}
-\newacronym{rtl}{RTL}{register-transfer level}
-\newacronym{snr}{SNR}{signal-to-noise ratio}
-\newacronym{spi}{SPI}{serial peripheral interface}
-\newacronym{uart}{UART}{universal asynchronous receiver/transmitter}
-\newacronym{vhdl}{VHDL}{VHSIC hardware description language}
+\newacronym{ask}{ASK}{Amplitude Shift Keying}
+\newacronym{bga}{BGA}{Ball Grid Array}
+\newacronym{bom}{BOM}{Bill of Materials}
+\newacronym{bram}{BRAM}{Block Random Access Memory}
+\newacronym{cdc}{CDC}{Clock Domain Crossing}
+\newacronym{clt}{CLT}{Command Line Tools (STM32Cube)}
+\newacronym{crc}{CRC}{Cyclic Redundancy Check}
+\newacronym{css}{CSS}{Chirp Spread Spectrum}
+\newacronym{dma}{DMA}{Direct Memory Access}
+\newacronym{dsp}{DSP}{Digital Signal Processing}
+\newacronym{eda}{EDA}{Exploratory Data Analysis}
+\newacronym{ff}{FF}{Flip-Flop}
+\newacronym{fifo}{FIFO}{First In, First Out}
+\newacronym{fpga}{FPGA}{Field-Programmable Gate Array}
+\newacronym{fsk}{FSK}{Frequency Shift Keying}
+\newacronym{fsm}{FSM}{Finite State Machine}
+\newacronym{gpio}{GPIO}{General-Purpose Input/Output}
+\newacronym{hal}{HAL}{Hardware Abstraction Layer}
+\newacronym{hdl}{HDL}{Hardware Description Language}
+\newacronym{i2c}{I\textsuperscript{2}C}{Inter-Integrated Circuit}
+\newacronym{ide}{IDE}{Integrated Development Environment}
+\newacronym{ila}{ILA}{Integrated Logic Analyzer}
+\newacronym{ism}{ISM}{Industrial, Scientific, and Medical}
+\newacronym{isr}{ISR}{Interrupt Service Routine}
+\newacronym{lut}{LUT}{Look-Up Table}
+\newacronym{mcu}{MCU}{Microcontroller Unit}
+\newacronym{ml}{ML}{Machine Learning}
+\newacronym{ook}{OOK}{On-Off Keying}
+\newacronym{per}{PER}{Packet Error Rate}
+\newacronym{rf}{RF}{Radio Frequency}
+\newacronym{rssi}{RSSI}{Received Signal Strength Indicator}
+\newacronym{rtl}{RTL}{Register-Transfer Level}
+\newacronym{snr}{SNR}{Signal-to-Noise Ratio}
+\newacronym{spi}{SPI}{Serial Peripheral Interface}
+\newacronym{uart}{UART}{Universal Asynchronous Receiver/Transmitter}
+\newacronym{vhdl}{VHDL}{VHSIC Hardware Description Language}
+\newacronym{xdc}{XDC}{Xilinx Design Constraints}
 
 % Convenience wrappers so you can type \IDE, \RF, etc.
 \providecommand{\ASK}{\gls{ask}}
 \providecommand{\BGA}{\gls{bga}}
 \providecommand{\BOM}{\gls{bom}}
 \providecommand{\BRAM}{\gls{bram}}
+\providecommand{\CDC}{\gls{cdc}}
+\providecommand{\CLT}{\gls{clt}}
 \providecommand{\CRC}{\gls{crc}}
 \providecommand{\CSS}{\gls{css}}
 \providecommand{\DMA}{\gls{dma}}
 \providecommand{\DSP}{\gls{dsp}}
 \providecommand{\EDA}{\gls{eda}}
+\providecommand{\FF}{\gls{ff}}
 \providecommand{\FIFO}{\gls{fifo}}
 \providecommand{\FPGA}{\gls{fpga}}
 \providecommand{\FSK}{\gls{fsk}}
 \providecommand{\FSM}{\gls{fsm}}
 \providecommand{\GPIO}{\gls{gpio}}
 \providecommand{\HAL}{\gls{hal}}
+\providecommand{\HDL}{\gls{hdl}}
 \providecommand{\IIC}{\gls{i2c}}
 \providecommand{\IDE}{\gls{ide}}
 \providecommand{\ILA}{\gls{ila}}
@@ -74,4 +107,5 @@
 \providecommand{\SPI}{\gls{spi}}
 \providecommand{\UART}{\gls{uart}}
 \providecommand{\VHDL}{\gls{vhdl}}
+\providecommand{\XDC}{\gls{xdc}}
 

@@ -1,0 +1,176 @@
+\documentclass[11pt,letterpaper]{article}
+\newcommand{\labid}{5-A}
+\newcommand{\labtitleshort}{Stress Test Plan and Active-Station Density (S1)}
+\input{LabHandout_Preamble}
+
+\begin{document}
+\labheader{5-A}{Stress Test Plan and S1 Active-Station Density Stress Test}
+
+\section{Objective}
+Write the formal Module~5 stress test plan that structures every subsequent experiment in this module, then execute the first dimension (S1: active-station density) to determine the maximum number of concurrent active stations (cooperative targets + Threat PAUSE bursts) the integrated system can support without unacceptable \PER{} degradation or \FIFO{} overflow. The deliverable is the \emph{empirically derived} maximum station count, not an a-priori guess --- this is the first number that enters the Module~5 system specification table.
+
+\section{Prerequisites}
+\begin{itemize}[leftmargin=2em]
+	\item Module~4 complete: three-task (\texttt{sf}, \texttt{beacon}, \texttt{pkt}) \texttt{inference.py} streaming live predictions; \texttt{live\_inference.py} validated. The \texttt{mod} task was dropped during Module~3 because the dataset is single-class (LoRa only).
+	\item Production bitstream (LH3-E) programmed; \FIFO{} count wired to \mbox{LEDs{}} (LH3-E Step~1) so peak \FIFO{} utilization is visible without an \mbox{ILA{}}.
+	\item All three radios operational: Target~A (Beacon~ID \texttt{0x01}), Target~B (Beacon~ID \texttt{0x02}), Threat (Beacon~ID \texttt{0xFF}). The Threat's user button (B1) reachable for PAUSE-burst configurations.
+	\item Baseline values from Module~3 (S1a-equivalent \PER{}) and Module~4 (nominal classification accuracy across all four tasks) at hand for comparison.
+\end{itemize}
+
+\section{Stress Test Philosophy}
+A stress test that merely confirms the system works under nominal conditions has limited educational value. The purpose of Module~5 stress testing is to find where the system \emph{stops} working --- and to understand \emph{why}. Each failure point traces back to a specific design decision in an earlier module:
+\begin{itemize}[leftmargin=2em]
+	\item Maximum aggregate frame rate is constrained by the \UART{} bandwidth chosen in Module~1 (115200 baud $\to$ 268~fps theoretical max) and the \FIFO{} depth chosen in Module~2 (64 entries).
+	\item Minimum classifiable \mbox{SNR} is constrained by the feature vector design in Module~2 and the training data distribution in Module~3.
+	\item Maximum sustained runtime is constrained by counter widths and ring-buffer sizing decisions in Module~1.
+	\item PAUSE response latency is constrained by the Threat firmware's 100\,ms TX cadence (Module~1 LH1-G) and the SF7 airtime of the PAUSE packet ($\sim$50\,ms).
+	\item RSSI-targeting accuracy is constrained by the Threat's RSSI-table staleness threshold (5\,s default, Module~1 LH1-G).
+\end{itemize}
+The stress tests \emph{derive} the system specification from empirical evidence, rather than testing against an a-priori specification.
+
+\section{Procedure}
+
+\subsection{Step 1 --- Write the stress test plan document}
+Create \texttt{stress\_test\_plan.md}. The plan is a one-page master document that LH5-A and LH5-B both reference.
+
+\begin{table}[h!]
+	\centering
+	\renewcommand{\arraystretch}{1.3}
+	\begin{tabularx}{\textwidth}{c l X c}
+		\toprule
+		\textbf{ID} & \textbf{Dimension} & \textbf{Configurations} & \textbf{Duration} \\
+		\midrule
+		S1 & Active-Station Density & Target~A only / A+B ping-pong (fixed and ALOHA initiator) / A+B + held-button PAUSE / A+B (ALOHA) + intermittent PAUSE & 5\,min each \\
+		S2 & Rapid Parameter Change & Cooperative-target ping-pong; Target~A SF cycles SF7$\to$SF10$\to$SF12$\to$SF7 every 30\,s & 10\,min \\
+		S3 & Low-\mbox{SNR} Operation & \mbox{TX} power +20 to +2\,dBm; distance 3\,m $\to$ 8\,m + obstruction; Target~A only & 3\,min/level \\
+		S4 & Extended Duration     & Cooperative-target ping-pong, nominal parameters & 30\,min \\
+		S5 & PAUSE Behavioral Response & Cooperative-target ping-pong + held-button PAUSE bursts; measure response/recovery latency and RSSI-targeting accuracy & 10\,min \\
+		\bottomrule
+	\end{tabularx}
+	\caption{Stress-test dimensions. S1 is executed in this handout; S2--S5 in LH5-B.}
+\end{table}
+
+Each row of the plan must also record, for each configuration, a \emph{pre-declared pass/fail threshold} --- e.g., ``\PER{} $<$ 5\%'' or ``\FIFO{} peak $<$ 75\%''. Declaring thresholds before the test prevents post-hoc rationalisation of bad results.
+
+\subsection{Step 2 --- Run the five S1 configurations}
+
+\begin{table}[h!]
+	\centering
+	\renewcommand{\arraystretch}{1.3}
+	\begin{tabularx}{\textwidth}{c c c c X}
+		\toprule
+		\textbf{Config} & \textbf{Active Stations} & \textbf{Mode} & \textbf{Interval} & \textbf{Target Observation} \\
+		\midrule
+		S1a & 1 (Target~A only)             & Fixed                          & 2\,s                       & Baseline: DATA-only; near-zero \PER{}, stable \FIFO{}. \\
+		S1b & 2 (Target~A + Target~B ping-pong) & Fixed initiator                & 1\,s DATA + event-driven ACK & Ping-pong; \FIFO{} handles $\sim$2\,fps easily. \\
+		S1c & 2 (Target~A + Target~B ping-pong) & ALOHA initiator                & [1, 3]\,s                  & Random initiator collisions; ACK still tracks each successful DATA. \\
+		S1d & 3 (A + B + Threat PAUSE bursts) & Fixed initiator + held-button & 1\,s DATA + 100\,ms PAUSE   & Sustained PAUSE bursts; PAUSE rows in dataset are sparse (Threat half-duplex shadows own TX) but visible. \\
+		S1e & 3 (A + B + Threat PAUSE bursts) & ALOHA initiator + intermittent button & [0.5, 2]\,s DATA + 5\,s on / 5\,s off PAUSE & Maximum contention; expect \PER{} uptick during PAUSE-active windows. \\
+		\bottomrule
+	\end{tabularx}
+	\caption{S1 configuration matrix. Allow 1 minute of stabilization between configurations.}
+\end{table}
+
+For each configuration, record:
+\begin{enumerate}[leftmargin=2em]
+	\item Total packets transmitted (sum of each station's sequence numbers, broken down by \texttt{pkt\_type}).
+	\item Total valid feature vectors (\FPGA{} observation counts per Beacon~\mbox{ID}, summed). For S1d/S1e, the Threat's apparent self-PER will be very high because its RX shadows its own TX --- this is expected and not a system fault.
+	\item \PER{} and its four-component decomposition (\mbox{RF} loss, framing errors, \mbox{CRC} rejects, \FIFO{} overflow) --- same decomposition introduced in LH3-D. For paused Targets in S1d/S1e, the apparent \PER{} reflects the deliberate TX hold-off, not a fault.
+	\item \FIFO{} peak utilization via \texttt{led(5:0)} peak observation plus the \texttt{led(15)} latching overflow alarm (LH3-E).
+	\item Live classification accuracy across all three deployed tasks: run \texttt{live\_inference.py} (LH4-H) simultaneously and compare predictions against the known station configuration. Compute SF / beacon-ID / packet-type accuracy per configuration. (The \texttt{mod} task is not deployed --- single-class skip.) Because \texttt{live\_inference.py} as shipped only prints to stdout, redirect or \texttt{tee} its output to a per-configuration log file (e.g.\ \texttt{> logs/s1a.txt}) and post-process accuracy from that.
+\end{enumerate}
+
+\subsection{Step 3 --- Data collection script}
+
+\begin{lstlisting}[language=Python, caption={\texttt{run\_s1.py} --- thin wrapper that runs \texttt{live\_inference.py} for each S1 configuration, capturing stdout to a per-config log. \texttt{live\_inference.py} as shipped takes only an optional COM port and prints to stdout; this wrapper redirects that stream and bounds the run via a \texttt{Popen.terminate()} after \texttt{DURATION\_S}.}]
+import time, json, subprocess, sys
+from pathlib import Path
+
+CONFIGS    = ["S1a", "S1b", "S1c", "S1d", "S1e"]
+DURATION_S = 5 * 60               # 5 minutes per configuration
+COM_PORT   = "COM3"               # FPGA USB-UART; change to your port
+
+Path("logs").mkdir(exist_ok=True)
+log = []
+for cfg in CONFIGS:
+    print(f"\n=== {cfg} ===")
+    print(f"Set up {cfg} per the configuration matrix:")
+    if cfg in ("S1d", "S1e"):
+        print("  * Operator must hold the Threat user button "
+              "during the run (continuous for S1d, 5s on / 5s off for S1e).")
+    input("  Press ENTER when stations are configured and ready.")
+    log_path = Path("logs") / f"{cfg}.txt"
+    with log_path.open("w") as f:
+        proc = subprocess.Popen([sys.executable, "live_inference.py",
+                                 COM_PORT], stdout=f, stderr=subprocess.STDOUT)
+        try:
+            proc.wait(timeout=DURATION_S)
+        except subprocess.TimeoutExpired:
+            proc.terminate(); proc.wait()
+    log.append({"cfg": cfg, "t": time.time(), "log": str(log_path)})
+    print(f"{cfg} finished. Check FIFO LED peak and overflow alarm:")
+    log[-1]["fifo_peak"] = int(input("  FIFO peak (0-63): "))
+    log[-1]["fifo_ovf"]  = input("  led(15) overflow set? (y/n): ") == "y"
+
+Path("s1_results.json").write_text(json.dumps(log, indent=2))
+print("Wrote s1_results.json")
+\end{lstlisting}
+
+\subsection{Step 4 --- Plots}
+\begin{enumerate}[leftmargin=2em]
+	\item \PER{} vs.\ active-station configuration (S1a--S1e), with PAUSE-active configurations marked distinctly.
+	\item \FIFO{} peak utilization bar chart (one bar per configuration). Horizontal line at 75\% threshold.
+	\item Classification accuracy vs.\ configuration, three lines (one per deployed task: SF / beacon / packet-type). The packet-type task's accuracy curve will look qualitatively different from the other two because the active class set changes between configurations (S1a is DATA-only; S1b/S1c add ACK; S1d/S1e add PAUSE).
+\end{enumerate}
+
+Identify the configuration at which SF accuracy first drops below 90\% --- this is the empirically-derived ``max safe active-station density.''
+
+\subsection{Step 5 --- Burst capture for S1e}
+The \mbox{ILA{}} only exists in the debug bitstream (LH3-B). The production bitstream from Prerequisites has no probes. Swap bitstreams explicitly for this capture:
+\begin{enumerate}[leftmargin=2em]
+	\item \textbf{Swap in the debug build:} program \texttt{ingest\_top\_debug.bit} via Vivado Hardware Manager. Confirm the \mbox{ILA{}} dashboard is reachable.
+	\item \textbf{Capture:} re-run the S1e configuration long enough to trigger at least one back-to-back burst that includes a captured PAUSE row (Beacon~ID \texttt{0xFF}, \texttt{pkt\_type} = \texttt{10}); save the \mbox{ILA{}} waveform and a screenshot.
+	\item \textbf{Swap back:} re-program \texttt{ingest\_top\_prod.bit} before resuming any long-duration test. Throughput, \PER{}, and endurance numbers elsewhere in Module~5 must be measured on the production bitstream.
+\end{enumerate}
+
+With the debug bitstream loaded, verify:
+\begin{itemize}[leftmargin=2em]
+	\item The parser resynchronises cleanly across adjacent frames.
+	\item \texttt{frame\_valid} pulses are separated by the expected number of clock cycles (no abnormally short pulses that would indicate a mis-parse).
+	\item The \FIFO{} drains back to empty between bursts.
+	\item PAUSE rows correctly route through the parser with \texttt{pkt\_type} = \texttt{10} on the ILA probe.
+\end{itemize}
+
+\begin{tcolorbox}[warning={Pre-Declared Thresholds}]
+	Write your pass/fail thresholds into \texttt{stress\_test\_plan.md} \emph{before} Step~2. Example:
+	\begin{itemize}[leftmargin=1.2em]
+		\item PASS if: \PER{} $<$ 5\% (excluding deliberate Target hold-off windows) and \FIFO{} peak $<$ 75\% and SF accuracy $\geq$ 90\% and beacon and packet-type accuracy $\geq$ 85\% on the configurations where ACK or PAUSE rows are present.
+		\item FAIL if: any of the above are violated.
+	\end{itemize}
+	After the run, if any configuration fails, report it as failed --- do not adjust the threshold to make the result pass. The failing configuration is the empirical spec boundary and is the whole point of the test.
+\end{tcolorbox}
+
+\section{Verification Checklist}
+\begin{itemize}[leftmargin=2em]
+	\item[$\square$] \texttt{stress\_test\_plan.md} written with pass/fail thresholds per configuration.
+	\item[$\square$] All five S1 configurations executed for 5 minutes each.
+	\item[$\square$] \PER{} decomposition recorded per configuration (four stages each).
+	\item[$\square$] \FIFO{} peak and overflow status recorded per configuration.
+	\item[$\square$] Live classification accuracy recorded per configuration for all three deployed tasks (sf, beacon, pkt).
+	\item[$\square$] \mbox{ILA{}} burst capture for S1e saved (including at least one PAUSE row).
+	\item[$\square$] Maximum safe active-station configuration identified and written into \texttt{spec\_table.md}.
+\end{itemize}
+
+\begin{tcolorbox}[deliverable={Lab Handout 5-A Deliverable}]
+	\begin{enumerate}[leftmargin=1.2em]
+		\item \texttt{stress\_test\_plan.md}: master test plan with pre-declared pass/fail thresholds for S1--S5.
+		\item \texttt{s1\_results.json} + \texttt{run\_s1.py}: raw measurements and the execution script.
+		\item Three figures: \PER{} vs.\ configuration, \FIFO{} peak bar chart, accuracy vs.\ configuration (four-task overlay).
+		\item \mbox{ILA{}} screenshot of the S1e burst including a PAUSE row.
+		\item One-paragraph conclusion: ``the maximum safe active-station configuration at $\leq$5\% \PER{} is X,'' with a one-sentence pointer to the design decision that created the limit.
+	\end{enumerate}
+\end{tcolorbox}
+
+\printhandoutglossary
+
+\end{document}

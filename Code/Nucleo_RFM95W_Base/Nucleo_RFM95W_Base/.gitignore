@@ -1,0 +1,2 @@
+# Build outputs and scratch files are covered by the root .gitignore.
+# .settings is intentionally tracked (STM32CubeMX project metadata).

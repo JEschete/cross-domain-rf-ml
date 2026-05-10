@@ -1,0 +1,134 @@
+\documentclass[11pt,letterpaper]{article}
+\newcommand{\labid}{3-E}
+\newcommand{\labtitleshort}{Throughput and Stress Test}
+\input{LabHandout_Preamble}
+
+\begin{document}
+\labheader{3-E}{Throughput Characterization and Multi-Station + PAUSE Stress Test}
+
+\section{Objective}
+Determine the system's throughput ceiling and \FIFO{} behavior under cooperative-target ping-pong with optional PAUSE-burst load, identify the pipeline's performance bottleneck, and generate the production bitstream (without \mbox{ILA}) that will be used for all data collection in Lab Handouts~3-F through 3-H.
+
+\section{Prerequisites}
+\begin{itemize}[leftmargin=2em]
+	\item Lab Handout~3-D complete (\PER{} and latency characterized for a single station).
+	\item Target~A, Target~B, and the Threat all powered and configured with known Beacon~\mbox{ID}s and transmission schedules.
+\end{itemize}
+
+\section{Background: Throughput Analysis}
+
+The theoretical maximum frame rate is constrained by the \UART{} link between the STM32 interceptor (Threat) and the \FPGA{}:
+\[
+	\text{Throughput}_{\text{max}} = \frac{\text{Baud Rate}}{\text{Bits per Frame}} = \frac{115{,}200}{43 \times 10} = 268~\text{fps}
+\]
+In practice, the \RF{} on-air time imposes a much lower ceiling for cooperative-target traffic. At SF7 with 1-second ping-pong (DATA + ACK pairs), the expected frame rate is about 2~fps --- far below the \UART{} ceiling. PAUSE bursts at 10\,Hz from the Threat add up to 10 fps when the button is held, but most are half-duplex shadowed and never make it to the \FPGA{}. The stress test is therefore about finding the realistic operating envelope and verifying the \FIFO{} does not overflow when intercepted-packet bursts cluster.
+
+\section{Procedure}
+
+\subsection{Step 1 --- FIFO utilization visibility}
+\begin{enumerate}[leftmargin=2em]
+	\item \texttt{fifo\_full} is already routed to \texttt{LED(3)} in \texttt{ingest\_top.vhd}. This is your primary real-time overflow indicator during the stress test --- watch it during each run.
+	\item Add a latching overflow alarm to \texttt{ingest\_top.vhd}: a single flip-flop that sets on \texttt{fifo\_full} and clears only on reset, routed to \texttt{LED(7)}. This ensures an overflow event is not missed even if it is brief:
+\begin{verbatim}
+process(CLK100MHZ)
+begin
+  if rising_edge(CLK100MHZ) then
+    if rst_n = '0' then
+      fifo_ovf_latch <= '0';
+    elsif fifo_full = '1' then
+      fifo_ovf_latch <= '1';
+    end if;
+  end if;
+end process;
+LED(7) <= fifo_ovf_latch;
+\end{verbatim}
+	\item Re-synthesize and re-program. Keep \texttt{g\_DEBUG = true} for now (you will generate the production bitstream in Step~8).
+\end{enumerate}
+
+\begin{tcolorbox}[infobox={Why Map FIFO to LEDs?}]
+	The \mbox{ILA{}} requires a JTAG connection and Vivado running on the host PC. During a 5-minute stress test it is impractical to watch the \mbox{ILA} continuously. \texttt{LED(3)} (\texttt{fifo\_full}) gives real-time overflow visibility, and the latching \texttt{LED(7)} alarm ensures you will not miss a brief overflow event at any point during the run.
+\end{tcolorbox}
+
+\subsection{Step 2 --- Single-station baseline}
+\begin{enumerate}[leftmargin=2em]
+	\item Power Target~A only: SF7, +14~dBm, 2-second fixed initiator interval. Target~B off, Threat button not held. Only DATA rows from Beacon~ID \texttt{0x01} are produced.
+	\item Run for 5 minutes. Record: packets transmitted ($N_{\text{tx}}$), \FPGA{} valid frames ($N_{\text{valid}}$), \PER{}, whether \texttt{fifo\_full} (\texttt{LED(3)}) asserted during the run, overflow alarm (\texttt{LED(7)}) status at end.
+	\item This is the performance baseline row in the table below.
+\end{enumerate}
+
+\subsection{Step 3 --- Cooperative-target ping-pong (fixed initiator)}
+\begin{enumerate}[leftmargin=2em]
+	\item Power on Target~B (responder). Target~A initiates DATA every 1\,s; Target~B responds with ACK on each successful DATA.
+	\item Run for 5 minutes. Record metrics for both Beacon~IDs (sum $N_{\text{tx}}$ across DATA + ACK rows; $N_{\text{tx}}^{\text{DATA}}$ from Target~A's USART2, $N_{\text{tx}}^{\text{ACK}}$ from Target~B's USART2).
+	\item Expected frame rate: $\sim$2~fps (one DATA + one ACK per second). Expected \FIFO{} peak: low.
+\end{enumerate}
+
+\subsection{Step 4 --- Cooperative-target ping-pong + sustained PAUSE bursts}
+\begin{enumerate}[leftmargin=2em]
+	\item Keep Target~A and Target~B running at fixed 1\,s initiator interval.
+	\item Have an operator hold the Threat's user button (B1) for the entire 5-minute run. The Threat emits PAUSE packets over the radio at 100\,ms cadence; these are not forwarded over USART3 to the \FPGA{}, so the \FPGA{} pipeline only sees any DATA or ACK frames the Threat still manages to receive during the button hold.
+	\item During this run the targeted Target's DATA TX is gated by the 500\,ms hold-off, so Target~A's effective TX rate drops sharply; Target~B will have nothing to ACK during pauses. Record the resulting \PER{} measured against the originating sequence numbers --- expect high apparent ``\PER{}'' for the targeted Target because the Target genuinely did not transmit during the held window. Document this as expected behavior, not a fault.
+	\item If the overflow alarm (\texttt{LED(7)}) sets during this run, note when in the run it occurred and press reset to clear before the next run.
+\end{enumerate}
+
+\begin{table}[h!]
+	\centering
+	\caption{Stress test results table (fill in during Steps~2--4).}
+	\renewcommand{\arraystretch}{1.4}
+	\begin{tabularx}{\textwidth}{X c c c c}
+		\toprule
+		\textbf{Config} & \textbf{$N_{\text{tx}}$} & \textbf{\PER{}} & \textbf{fifo\_full?} & \textbf{Alarm (LED7)?} \\
+		\midrule
+		Target~A only, 1\,s interval, no PAUSE        & & & & \\
+		A+B ping-pong, 1\,s interval, no PAUSE        & & & & \\
+		A+B ping-pong, 1\,s interval, held PAUSE      & & & & \\
+		\bottomrule
+	\end{tabularx}
+\end{table}
+
+\subsection{Step 5 --- Bottleneck identification and mitigation proposal}
+\begin{enumerate}[leftmargin=2em]
+	\item Examine the stress test table from Steps~2--4. If \FIFO{} overflow occurred, identify the configuration that triggered it. The bottleneck is the link between the overflow source and the pipeline stage that cannot drain fast enough.
+	\item For a \FIFO{}-dominated bottleneck, propose at least one mitigation: increase the \FIFO{} depth from 64 to 256 entries (uses one additional \mbox{BRAM} tile), upgrade the interceptor-to-\FPGA{} link from \UART{} to \mbox{SPI} (faster), or reduce the inter-frame overhead in the Threat firmware (shorter frame gaps).
+	\item Document the bottleneck and proposed mitigation in one paragraph. You do not need to implement the mitigation for this handout.
+\end{enumerate}
+
+\begin{tcolorbox}[infobox={Why Not Just Increase the FIFO Depth?}]
+	A deeper \FIFO{} delays overflow but does not eliminate the root cause. If the peak ingress rate (bytes/s from the \UART{}) permanently exceeds the egress rate (bytes/s the parser can process), no finite \FIFO{} depth will prevent eventual overflow. In practice, the Module~2 parser processes one byte per clock cycle at 100\,MHz, which is $\gg$115200 baud. The actual risk is transient bursts from multiple simultaneous receptions (DATA + ACK + a half-duplex-leaked PAUSE arriving in close succession), not a sustained throughput mismatch. Increasing the \FIFO{} depth from 64 to 256 entries is sufficient for the cooperative-target + PAUSE-burst configurations in this module.
+\end{tcolorbox}
+
+\newpage
+\subsection{Step 6 --- Generate the production bitstream}
+\begin{enumerate}[leftmargin=2em]
+	\item In \texttt{ingest\_top.vhd} (or the top-level instantiation), set \texttt{g\_DEBUG = false}. This removes the \mbox{ILA} core, freeing the 4 \mbox{BRAM{}} tiles it was occupying.
+	\item Run Synthesis, Implementation, and Generate Bitstream. The output is \texttt{ingest\_top.bit} in \texttt{impl\_1/} as usual; archive a copy labelled \texttt{ingest\_top\_prod.bit} for reference.
+	\item Open the post-implementation utilization report. Confirm \mbox{BRAM{}} count is back to the Module~2 baseline (2 tiles for the feature \mbox{BRAM{}}, not 6).
+	\item Program the production bitstream. In the Hardware Manager program device dialog, clear the \textbf{Debug probes file} field --- it will still point to the previous \texttt{.ltx} from the debug build and must be blank for a non-debug bitstream. The \mbox{ILA{}} dashboard will no longer be available, but all pipeline functionality and \mbox{LED{}} indicators (from Step~1) remain.
+	\item Run the single-beacon PER test from Step~2 again with the production bitstream. Confirm the \PER{} is within 1 percentage point of the debug-bitstream measurement. Any large change indicates the \mbox{ILA{}} was interfering with timing in the debug build.
+\end{enumerate}
+
+\labfigure{LH3E_prod_utilization.png}{0.85\textwidth}{Post-implementation utilization of the production bitstream (\texttt{g\_DEBUG = false}). \mbox{BRAM{}} count should be 2 tiles, not 6. This is the bitstream used for all data collection in LH3-F through LH3-H.}{fig:lh3e-util}
+
+\section{Verification Checklist}
+\begin{itemize}[leftmargin=2em]
+	\item[$\square$] Overflow latch added to \texttt{ingest\_top.vhd}; alarm visible on \texttt{LED(7)} and clears on reset.
+	\item[$\square$] All three station configurations in the stress table completed and recorded.
+	\item[$\square$] \FIFO{} peak utilization noted for each configuration; any overflow events documented.
+	\item[$\square$] Bottleneck identified and mitigation proposed.
+	\item[$\square$] Production bitstream generated (\texttt{g\_DEBUG = false}); \mbox{BRAM{}} count is 2 tiles.
+	\item[$\square$] Production \PER{} within 1 percentage point of debug \PER{} (no timing regression).
+\end{itemize}
+
+\begin{tcolorbox}[deliverable={Lab Handout 3-E Deliverable}]
+	\begin{enumerate}[leftmargin=1.2em]
+		\item Completed stress test results table (all 3 configurations).
+		\item Bottleneck analysis paragraph with proposed mitigation.
+		\item Post-implementation utilization report for the production bitstream.
+		\item A brief ``system performance envelope'' summary table establishing the operating parameters for data collection: maximum safe active-station count (counting cooperative targets + PAUSE-active Threat), recommended initiator interval, \FIFO{} headroom under both quiescent and PAUSE-active operation.
+		\item \texttt{ingest\_top\_prod.bit} (the bitstream used for all remaining handouts).
+	\end{enumerate}
+\end{tcolorbox}
+
+\printhandoutglossary
+
+\end{document}
