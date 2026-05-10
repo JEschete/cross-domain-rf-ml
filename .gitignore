@@ -1,4 +1,6 @@
-# IEEE source papers (copyrighted, do not distribute)
+# IEEE source papers (copyrighted, do not distribute) — defensive: catch any path
+**/IEEESources/
+ResearchPaper/Sources/IEEESources/
 Term_Paper/Sources/IEEESources/
 
 # Claude Code memory/config

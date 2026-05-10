@@ -40,13 +40,14 @@ Modules 1–4 were executed end-to-end on physical hardware. Module 5 is fully s
 │   ├── glossary.tex
 │   └── Curriculum_Sequence.tex      # Top-level curriculum sequence document
 ├── ResearchPaper/
-│   ├── FinalReport/                 # IEEE-format paper (Eschete_RF_AI_FPGA_Curriculum.{tex,pdf})
+│   ├── FinalReport/
+│   │   ├── Eschete_RF_AI_FPGA_Curriculum.{tex,pdf}    # IEEE-format paper
+│   │   └── figures/wiring_diagram.png                 # Per-node hardware wiring (Threat / Target A / Target B)
 │   └── Sources/                     # Reference PDFs and bibliography sources
 ├── Notes/                           # Working references and configuration screenshots
 ├── Eschete_Presentation.pptx        # Project presentation slide deck
 ├── TestLog.md                       # Running validation log across all lab handouts
 ├── FigList.txt                      # Figure inventory for the paper
-├── wiring_diagram.png               # Per-node hardware wiring (Threat / Target A / Target B)
 └── README.md
 ```
 
@@ -92,15 +93,22 @@ If you use this framework or build on its curriculum, please cite:
 ```bibtex
 @techreport{eschete2026rfaifpga,
   title       = {An Educational Framework for {AI-Driven} {RF} Signal Processing on {FPGA}},
-  author      = {Eschete, Jude and Yett, Bernard},
+  author      = {Eschete, Jude},
   institution = {Stevens Institute of Technology, Department of Electrical and Computer Engineering},
-  year        = {2026}
+  year        = {2026},
+  note        = {Project advisor: Bernard Yett}
 }
 ```
 
 ## License
 
-License TBD — no formal license is in place yet, so external reuse is restricted by default. A common pairing for projects of this kind is the MIT License for code under `Code/` and CC BY 4.0 for the curriculum materials under `LessonPlans/` and the paper under `ResearchPaper/`. A `LICENSE` file will be added before public redistribution.
+This repository is dual-licensed by content type:
+
+- **Code** (`Code/` — STM32 firmware, FPGA RTL, Python ML pipeline, tooling): [MIT License](LICENSE).
+- **Curriculum materials** (`LessonPlans/` — lesson plans, lab handouts, glossary, diagrams): [Creative Commons Attribution 4.0 International (CC BY 4.0)](LessonPlans/LICENSE).
+- **Paper** (`ResearchPaper/` — LaTeX source, PDF, figures, bibliography support): [Creative Commons Attribution 4.0 International (CC BY 4.0)](ResearchPaper/LICENSE).
+
+External works referenced by the paper (cited publications, third-party datasheets, IEEE source PDFs) retain their original copyrights and are not covered by these licenses; they are included only as bibliographic supporting material.
 
 ## Contact
 
