@@ -86,6 +86,11 @@ Each module spans four sessions of ~3 hours and ships eight lab handouts (`LH<n>
 
 Modules 1–4 are validated on hardware: evidence is archived in `TestLog.md`, the per-stage manifests under `Code/AIML/`, and the Vivado synthesis/implementation reports under `Code/ingest_top/`. Module 5 cohort execution and the deferred C3/C4 dataset campaigns remain open.
 
+## TODO
+
+- **Add figures to empty references.** A number of `\labfigure` and `\includegraphics` placeholders across the lesson plans and lab handouts still resolve to missing images (and the figure caption is the only thing rendered). The full inventory of expected figures is in [FigList.txt](FigList.txt); each entry needs the corresponding photo, schematic, or screenshot captured and dropped into the relevant `LessonPlans/Module N/Images/` (or per-handout) directory.
+- **Formatting pass on all lesson plans and lab handouts.** Tighten layout consistency across [LessonPlans/](LessonPlans/) — section spacing, code-listing widths, table column widths, page breaks before deliverable boxes, and consistent use of the `tcolorbox` info/warning/deliverable styles defined in each module's `LabHandout_Preamble.tex`. The goal is for any handout in any module to look visually identical to any other.
+
 ## Citation
 
 If you use this framework or build on its curriculum, please cite:
